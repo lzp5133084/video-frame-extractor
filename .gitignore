@@ -1,0 +1,13 @@
+# 运行时与用户数据（不上传）
+runtime/
+data/
+output/
+test_assets/
+__pycache__/
+*.pyc
+
+# 本机日志与过程文件
+运行日志.txt
+监控日志.txt
+监控暂停.flag
+程序对话记录.txt

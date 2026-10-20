@@ -1,0 +1,18 @@
+{
+  "presets": [
+    {"name": "极速档", "crf": 32, "height": 480, "preset": "veryfast", "desc": "最小体积，检测最快"},
+    {"name": "快速档", "crf": 28, "height": 720, "preset": "faster", "desc": "体积小速度快"},
+    {"name": "均衡档", "crf": 25, "height": 720, "preset": "medium", "desc": "速度画质平衡"},
+    {"name": "高清档", "crf": 23, "height": 1080, "preset": "medium", "desc": "高画质提取"},
+    {"name": "原画档", "crf": 18, "height": 0, "preset": "slow", "desc": "保持原分辨率"}
+  ],
+  "detect": {
+    "threshold": 0.06,
+    "block_size": 8,
+    "block_delta": 14,
+    "sample_fps": 2,
+    "min_gap_sec": 1.0,
+    "ignore_corners": true,
+    "corner_ratio": 0.15
+  }
+}
