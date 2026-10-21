@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>视频单帧提取工具 · Video Frame Extractor Web</title>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+<style>
+  :root{
+    --bg:#0a0e1a; --bg2:#0f1526; --card:rgba(255,255,255,.045); --line:rgba(255,255,255,.09);
+    --gold:#f0b35c; --cyan:#35e0d2; --txt:#e8ecf6; --dim:#9aa3b8; --red:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:
+      radial-gradient(900px 500px at 85% -10%, rgba(53,224,210,.10), transparent 60%),
+      radial-gradient(800px 460px at -10% 110%, rgba(240,179,92,.10), transparent 60%),
+      var(--bg);
+    color:var(--txt); font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; min-height:100vh; padding-bottom:70px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 16px}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:20px}
+  .logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:22px;
+    background:linear-gradient(135deg,rgba(240,179,92,.25),rgba(53,224,210,.18));border:1px solid var(--line)}
+  h1{font-size:21px;letter-spacing:.5px}
+  h1 em{font-style:normal;background:linear-gradient(90deg,var(--gold),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:12.5px;width:100%;margin-top:-4px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;backdrop-filter:blur(8px)}
+  .card h2{font-size:14.5px;margin-bottom:12px;color:var(--gold);letter-spacing:1px}
+  .card h2 .n{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;margin-right:8px;
+    background:linear-gradient(135deg,var(--gold),#d99a3d);color:#141414;font-size:12px;font-weight:bold}
+  .drop{border:2px dashed rgba(240,179,92,.45);border-radius:14px;padding:26px 14px;text-align:center;cursor:pointer;transition:.2s}
+  .drop:hover,.drop.on{background:rgba(240,179,92,.08);border-color:var(--gold)}
+  .drop .ic{font-size:34px}
+  .drop p{margin-top:8px;font-size:13.5px}
+  .drop .tip{color:var(--dim);font-size:12px;margin-top:4px}
+  .row{display:flex;align-items:center;gap:10px;margin:12px 0;font-size:13px}
+  .row label{min-width:86px;color:var(--dim)}
+  select,input[type=range]{flex:1}
+  select{background:var(--bg2);color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px;outline:none}
+  input[type=range]{accent-color:var(--gold)}
+  .val{min-width:52px;text-align:right;color:var(--cyan);font-family:Consolas,monospace}
+  .chk{display:flex;align-items:center;gap:6px;color:var(--dim);font-size:12.5px}
+  .btn{border:none;border-radius:12px;padding:11px 18px;font-size:14px;cursor:pointer;color:#141414;font-weight:bold;
+    background:linear-gradient(135deg,var(--gold),#e8a444);transition:.2s;letter-spacing:1px}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(240,179,92,.35)}
+  .btn.cy{background:linear-gradient(135deg,var(--cyan),#1fb9ad)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--txt);font-weight:normal}
+  .btn:disabled{opacity:.35;cursor:not-allowed;transform:none;box-shadow:none}
+  .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+  .prog{height:9px;background:var(--bg2);border-radius:6px;overflow:hidden;margin-top:12px;border:1px solid var(--line)}
+  .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),var(--cyan));transition:.15s}
+  .status{font-size:12.5px;color:var(--dim);margin-top:8px;min-height:18px}
+  .frames{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px}
+  .fcard{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--bg2);position:relative}
+  .fcard img{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;cursor:zoom-in}
+  .fcard .t{position:absolute;top:6px;left:6px;background:rgba(0,0,0,.55);color:var(--gold);font-size:11px;
+    padding:2px 8px;border-radius:8px;font-family:Consolas,monospace}
+  .fcard .dl{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);border:none;color:var(--cyan);
+    width:26px;height:26px;border-radius:8px;cursor:pointer;font-size:13px}
+  .empty{color:var(--dim);font-size:13px;text-align:center;padding:30px 0}
+  .hist{font-size:12.5px}
+  .hist .hitem{display:flex;justify-content:space-between;gap:8px;padding:7px 10px;border:1px solid var(--line);
+    border-radius:10px;margin-bottom:7px;cursor:pointer;transition:.15s}
+  .hist .hitem:hover{border-color:var(--gold);background:rgba(240,179,92,.06)}
+  .hist .hitem .m{color:var(--dim)}
+  footer{position:fixed;bottom:0;left:0;right:0;background:rgba(10,14,26,.92);border-top:1px solid var(--line);
+    padding:9px 14px;text-align:center;font-size:11.5px;color:var(--dim);backdrop-filter:blur(8px)}
+  footer b{color:var(--gold)}
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:50;place-items:center;padding:20px}
+  .modal img{max-width:100%;max-height:82vh;border-radius:12px;border:1px solid var(--line)}
+  .modal .x{position:absolute;top:16px;right:20px;font-size:30px;color:#fff;cursor:pointer}
+  .modal .cap{color:var(--gold);text-align:center;margin-top:10px;font-family:Consolas,monospace}
+  .note{font-size:12px;color:var(--dim);line-height:1.8;margin-top:10px}
+  .note b{color:var(--gold);font-weight:normal}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">🎞️</div>
+    <h1>视频单帧提取工具 <em>WEB 版</em></h1>
+    <div class="sub">把课程录屏 / 手机操作视频里的静止无效画面去掉，只保留变化的关键单帧 —— 浏览器本地处理，视频不上传，隐私安全</div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2><span class="n">1</span>选择视频</h2>
+      <div class="drop" id="drop">
+        <div class="ic">📁</div>
+        <p>点击选择 或 拖拽视频到这里</p>
+        <div class="tip">支持 MP4 / MOV / WEBM / MKV（浏览器可解码的格式）</div>
+      </div>
+      <input type="file" id="file" accept="video/*" hidden>
+      <div class="row" style="margin-top:14px">
+        <label>分析精度</label>
+        <select id="preset">
+          <option value="0">① 极速 —— 长视频粗筛（≈40采样）</option>
+          <option value="1">② 快速 —— 日常录屏（≈70采样）</option>
+          <option value="2" selected>③ 均衡 —— 课程PPT推荐（≈110采样）</option>
+          <option value="3">④ 高清 —— 细腻检测（≈160采样）</option>
+          <option value="4">⑤ 原画 —— 慢速最全（≈220采样）</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>静止阈值</label>
+        <input type="range" id="th" min="1" max="100" value="6">
+        <span class="val" id="thv">0.06</span>
+      </div>
+      <div class="row">
+        <label>四角遮罩</label>
+        <div class="chk"><input type="checkbox" id="mask" checked> 忽略画面四角（过滤摄像头气泡 / 水印干扰）</div>
+      </div>
+      <div class="btns">
+        <button class="btn" id="go" disabled>开始分析提取</button>
+      </div>
+      <div class="prog"><i id="bar"></i></div>
+      <div class="status" id="st">等待选择视频…</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>导出成果</h2>
+      <div class="btns" style="margin-top:2px">
+        <button class="btn cy" id="dlPng" disabled>⬇ 逐张下载单帧</button>
+        <button class="btn" id="mkPpt" disabled>📊 生成 PPT</button>
+        <button class="btn" id="mkGif" disabled>🌀 生成动态 GIF</button>
+      </div>
+      <div class="note">
+        <b>PPT</b>：16:9 逐页铺满关键帧（PptxGenJS 生成真 .pptx；CDN 不可用时自动改为下载 HTML 幻灯片）。<br>
+        <b>GIF</b>：循环播放的动态预览（默认宽 640、帧时长按停留时间）。
+      </div>
+      <h2 style="margin-top:18px"><span class="n">3</span>历史记忆（点击复用参数）</h2>
+      <div class="hist" id="hist"><div class="empty" style="padding:12px 0">暂无记录 —— 分析完成后自动保存</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h2><span class="n">4</span>提取结果（<span id="cnt">0</span> 帧）</h2>
+    <div class="frames" id="frames"><div class="empty">尚无结果 —— 选好视频点「开始分析提取」</div></div>
+  </div>
+
+  <div class="note" style="margin-top:14px">
+    <b>阈值经验</b>：提取太多 → 调大（0.10）；漏页 → 调小（0.03）；课程PPT录屏推荐 0.05~0.10；手机操作演示推荐 0.03~0.06。
+    全部处理在您的浏览器完成，<b>视频不会上传到任何服务器</b>。桌面增强版（5档ffmpeg压缩 / 多用户）见 <b>ecojia.cn/tools</b> T20 源码仓库。
+  </div>
+</div>
+
+<footer>
+  程序大小 <b>36.8 KB</b> ｜ 最后保存 <b id="savetime">2026-10-21 12:00</b> ｜ 作者：<b>军哥懂保</b> ｜ 微信：<b>xunijiayuan</b> ｜ 数字生态家园 ecojia.cn · T20
+</footer>
+
+<div class="modal" id="modal"><span class="x" onclick="md.style.display='none'">×</span><div><img id="mimg"><div class="cap" id="mcap"></div></div></div>
+
+<script>
+/* ═══════════ 基础 ═══════════ */
+const $=id=>document.getElementById(id);
+const drop=$('drop'),file=$('file'),go=$('go'),bar=$('bar'),st=$('st'),frames=$('frames');
+let vid=null,dur=0,results=[],busy=false;
+const SAMPLES=[40,70,110,160,220];
+const VNAME=['极速','快速','均衡','高清','原画'];
+$('savetime').textContent=new Date().toLocaleString('zh-CN',{hour12:false});
+
+/* ═══════════ 文件选择 ═══════════ */
+drop.onclick=()=>file.click();
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('on')};
+drop.ondragleave=()=>drop.classList.remove('on');
+drop.ondrop=e=>{e.preventDefault();drop.classList.remove('on');if(e.dataTransfer.files[0])load(e.dataTransfer.files[0])};
+file.onchange=()=>file.files[0]&&load(file.files[0]);
+
+function load(f){
+  if(!f.type.startsWith('video')){msg('⚠ 请选择视频文件');return}
+  vid=document.createElement('video');vid.muted=true;vid.playsInline=true;vid.preload='auto';
+  vid.src=URL.createObjectURL(f);
+  vid.onloadedmetadata=()=>{
+    dur=vid.duration;
+    msg(`✔ ${f.name} ｜ 时长 ${fmt(dur)} ｜ ${f.size>1048576?(f.size/1048576).toFixed(1)+' MB':(f.size/1024|0)+' KB'} —— 可开始分析`);
+    go.disabled=false;
+  };
+  vid.onerror=()=>msg('⚠ 此格式浏览器无法解码，请转 MP4(H.264) 后重试');
+}
+
+/* ═══════════ 阈值 UI ═══════════ */
+$('th').oninput=e=>$('thv').textContent=(e.target.value/100).toFixed(2);
+
+/* ═══════════ 核心算法（与桌面版同源：8×8块帧差 + 四角遮罩 + 拉普拉斯优选） ═══════════ */
+const GW=160,GH=90,BS=10,GX=GW/BS,GY=GH/BS;      // 16×9 块
+const samp=document.createElement('canvas');samp.width=GW;samp.height=GH;
+const sc=samp.getContext('2d',{willReadFrequently:true});
+const CORNER=2;                                    // 四角遮罩块数
+
+function blockDiff(a,b){                           // 变化块占比
+  let ch=0,tot=0;
+  for(let by=0;by<GY;by++)for(let bx=0;bx<GX;bx++){
+    if(by<CORNER||by>=GY-CORNER){if($('mask').checked&&(bx<CORNER||bx>=GX-CORNER))continue;}
+    let d=0;
+    for(let y=0;y<BS;y+=2)for(let x=0;x<BS;x+=2){
+      const i=((by*BS+y)*GW+bx*BS+x)*4;
+      d+=Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2]);
+    }
+    if(d>90)ch++;tot++;
+  }
+  return ch/tot;
+}
+function sharpness(img){                           // 拉普拉斯方差（清晰度）
+  let s=0,s2=0,n=0;
+  for(let y=1;y<GH-1;y+=2)for(let x=1;x<GW-1;x+=2){
+    const i=(y*GW+x)*4,c=img[i];
+    const lap=4*c-img[i-4]-img[i+4]-img[i-GW*4]-img[i+GW*4];
+    s+=lap;s2+=lap*lap;n++;
+  }
+  const m=s/n;return s2/n-m*m;
+}
+function grab(){sc.drawImage(vid,0,0,GW,GH);return sc.getImageData(0,0,GW,GH).data}
+function shot(w){                                  // 高清关键帧 dataURL
+  const c=document.createElement('canvas');
+  c.width=Math.min(w||1280,vid.videoWidth);c.height=Math.round(c.width*vid.videoHeight/vid.videoWidth);
+  c.getContext('2d').drawImage(vid,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.88);
+}
+function seek(t){return new Promise(r=>{const h=()=>{vid.removeEventListener('seeked',h);setTimeout(r,40)};vid.addEventListener('seeked',h);vid.currentTime=Math.min(t,dur-.05)})}
+const fmt=t=>`${String(t/60|0).padStart(2,'0')}:${String(t%60|0).padStart(2,'0')}`;
+const msg=s=>st.textContent=s;
+
+/* ═══════════ 分析流程 ═══════════ */
+go.onclick=async()=>{
+  if(busy||!vid)return;busy=true;go.disabled=true;results=[];
+  frames.innerHTML='<div class="empty">分析中…</div>';
+  const th=$('th').value/100,n=SAMPLES[$('preset').value];
+  const step=dur/n;
+  try{
+    let prev=null,kept=null,keptScore=-1,keptT=0;
+    for(let i=0;i<n;i++){
+      const t=i*step;
+      await seek(t);
+      const g=grab();
+      let isNew;
+      if(kept===null)isNew=true;
+      else{const dKeep=blockDiff(g,kept);isNew=dKeep>th;}
+      if(prev&&kept!==null){const dPrev=blockDiff(g,prev);if(dPrev>th)isNew=true;}
+      prev=g;
+      if(isNew){
+        if(kept!==null)push(keptT,keptScore);
+        kept=g;keptScore=sharpness(g);keptT=t;
+      }else{
+        const s=sharpness(g);if(s>keptScore){kept=g;keptScore=s;keptT=t;}
+      }
+      bar.style.width=((i+1)/n*100)+'%';
+      if(i%5===0)msg(`采样 ${i+1}/${n} ｜ 已提取 ${results.length} 个变化画面`);
+    }
+    if(kept!==null)push(keptT,keptScore);
+  }catch(err){msg('⚠ 出错：'+err.message)}
+  render();
+  saveHist();
+  busy=false;go.disabled=false;
+};
+
+function push(t,score){
+  results.push({t,score,dataURL:shot(1280),small:shot(480)});
+}
+function render(){
+  $('cnt').textContent=results.length;
+  bar.style.width='100%';
+  if(!results.length){frames.innerHTML='<div class="empty">未检测到明显画面变化 —— 试试调小阈值</div>';setExp(false);msg('分析完成：无有效变化帧');return}
+  frames.innerHTML='';
+  results.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='fcard';
+    d.innerHTML=`<img src="${r.small}" onclick="view(${i})"><span class="t">#${i+1} · ${fmt(r.t)}</span><button class="dl" onclick="dl1(${i})" title="下载此帧">⬇</button>`;
+    frames.appendChild(d);
+  });
+  setExp(true);
+  msg(`✔ 分析完成：${results.length} 个关键帧（可导出 PPT / GIF / 逐张下载）`);
+}
+function setExp(on){['dlPng','mkPpt','mkGif'].forEach(id=>$(id).disabled=!on)}
+function view(i){$('mimg').src=results[i].dataURL;$('mcap').textContent=`第 ${i+1} 帧 · ${fmt(results[i].t)} · 清晰度 ${results[i].score.toFixed(1)}`;$('modal').style.display='grid'}
+function dl1(i){const a=document.createElement('a');a.href=results[i].dataURL;a.download=`frame_${String(i+1).padStart(3,'0')}_t${results[i].t.toFixed(1)}s.jpg`;a.click()}
+
+/* ═══════════ 导出 ═══════════ */
+$('dlPng').onclick=()=>{msg('开始逐张下载…');results.forEach((r,i)=>setTimeout(()=>dl1(i),i*350))};
+
+$('mkPpt').onclick=async()=>{
+  msg('正在生成 PPT…');
+  try{
+    if(typeof PptxGenJS==='undefined')throw 0;
+    const p=new PptxGenJS();p.defineLayout({name:'W',width:13.333,height:7.5});p.layout='W';
+    results.forEach((r,i)=>{
+      const s=p.addSlide();s.addImage({data:r.dataURL,x:0,y:0,w:13.333,h:7.5});
+      s.addText(`${fmt(r.t)}`, {x:12.1,y:7.05,w:1.1,h:.4,fontSize:11,color:'F0B35C'});
+    });
+    await p.writeFile({fileName:'单帧提取_'+new Date().toISOString().slice(0,10)+'.pptx'});
+    msg('✔ PPT 已生成下载');
+  }catch(e){
+    // 兜底：自包含 HTML 幻灯片
+    let h='<!DOCTYPE html><meta charset="utf-8"><title>单帧提取幻灯片</title><style>body{margin:0;background:#000;font-family:sans-serif}div{display:flex;align-items:center;justify-content:center;height:100vh}img{max-width:100vw;max-height:100vh}span{position:fixed;right:12px;bottom:10px;color:#f0b35c;font-size:13px}</style>';
+    results.forEach((r,i)=>h+=`<div><img src="${r.dataURL}"><span>${i+1}/${results.length} · ${fmt(r.t)}</span></div>`);
+    dl('单帧提取幻灯片.html',h);msg('⚠ PPT 组件加载失败，已改为下载 HTML 幻灯片');
+  }
+};
+
+$('mkGif').onclick=()=>{
+  msg('正在生成 GIF…');
+  try{
+    if(typeof GIF==='undefined')throw 0;
+    fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js').then(r=>r.text()).then(w=>{
+      const gw=640,gh=Math.round(gw*vid.videoHeight/vid.videoWidth);
+      const g=new GIF({workers:2,quality:12,width:gw,height:gh,workerScript:URL.createObjectURL(new Blob([w],{type:'application/javascript'}))});
+      results.forEach((r,i)=>{
+        const im=new Image();
+        im.onload=()=>{
+          const c=document.createElement('canvas');c.width=gw;c.height=gh;
+          c.getContext('2d').drawImage(im,0,0,gw,gh);
+          g.addFrame(c,{delay:700,copy:true});
+          if(--pend===0)g.render();
+        };
+        im.src=r.small;
+      });
+    });
+  }catch(e){msg('⚠ GIF 组件加载失败（网络原因），可改用逐张下载')}
+};
+
+function dl(name,data){
+  const a=document.createElement('a');
+  a.href=typeof data==='string'&&data.startsWith('data:')?data:URL.createObjectURL(new Blob([data]));
+  a.download=name;a.click();
+}
+
+/* ═══════════ 历史记忆（localStorage） ═══════════ */
+const HK='vfe_hist';
+function saveHist(){
+  let h=[];try{h=JSON.parse(localStorage.getItem(HK)||'[]')}catch(e){}
+  h.unshift({time:new Date().toLocaleString('zh-CN',{hour12:false}),th:$('th').value/100,preset:$('preset').value,mask:$('mask').checked,frames:results.length});
+  h=h.slice(0,8);localStorage.setItem(HK,JSON.stringify(h));renderHist();
+}
+function renderHist(){
+  let h=[];try{h=JSON.parse(localStorage.getItem(HK)||'[]')}catch(e){}
+  if(!h.length){$('hist').innerHTML='<div class="empty" style="padding:12px 0">暂无记录</div>';return}
+  $('hist').innerHTML=h.map((x,i)=>`<div class="hitem" onclick="use(${i})"><span>阈值 ${x.th} · ${VNAME[x.preset]}${x.mask?'·遮罩':''}</span><span class="m">${x.frames}帧 · ${x.time}</span></div>`).join('');
+}
+function use(i){
+  let h=[];try{h=JSON.parse(localStorage.getItem(HK)||'[]')}catch(e){}
+  const x=h[i];if(!x)return;
+  $('th').value=x.th*100;$('thv').textContent=x.th.toFixed(2);
+  $('preset').value=x.preset;$('mask').checked=x.mask;
+  msg(`已复用参数：阈值 ${x.th} · ${VNAME[x.preset]}`);
+}
+renderHist();
+</script>
+</body>
+</html>
