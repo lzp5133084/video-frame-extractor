@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>视频单帧提取工具 · VIP 高清原图版 — 数字生态家园</title>
+<style>
+:root{
+  --bg:#0a0e1a; --card:rgba(255,255,255,.045); --card2:rgba(255,255,255,.07);
+  --line:rgba(255,255,255,.09); --txt:#e8ecf6; --sub:#8b93ab;
+  --c1:#f472b6; --c2:#c084fc; --acc:#fbbf24;
+  --grad:linear-gradient(135deg,#f472b6,#c084fc 55%,#fbbf24);
+  --r:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{color-scheme:dark}
+body{
+  font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden;
+}
+body::before,body::after{
+  content:"";position:fixed;border-radius:50%;filter:blur(120px);opacity:.16;pointer-events:none;z-index:0;
+}
+body::before{width:520px;height:520px;background:#f472b6;top:-160px;left:-120px}
+body::after{width:620px;height:620px;background:#c084fc;bottom:-220px;right:-160px}
+::selection{background:rgba(192,132,252,.4)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:8px}
+::-webkit-scrollbar-track{background:transparent}
+
+header{
+  position:relative;z-index:1;padding:26px 34px 18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+}
+.logo{
+  width:38px;height:38px;border-radius:11px;background:var(--grad);display:inline-grid;place-items:center;
+  font-size:19px;box-shadow:0 6px 22px rgba(244,114,182,.35);transform:translateY(6px);
+}
+h1{font-size:21px;font-weight:700;letter-spacing:.5px}
+h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--sub);font-size:13px}
+.badge{
+  margin-left:auto;font-size:12px;color:#7ef0c4;border:1px solid rgba(52,211,153,.35);
+  padding:4px 12px;border-radius:99px;background:rgba(52,211,153,.08);
+}
+
+main{
+  position:relative;z-index:1;display:grid;grid-template-columns:350px 1fr;gap:20px;
+  padding:6px 34px 34px;align-items:start;
+}
+@media(max-width:980px){main{grid-template-columns:1fr}}
+.panel,.results{
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 12px 40px rgba(0,0,0,.35);
+}
+.panel{padding:22px;display:flex;flex-direction:column;gap:18px;position:sticky;top:18px}
+@media(max-width:980px){.panel{position:static}}
+.ptitle{font-size:13px;font-weight:600;color:var(--sub);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.ptitle::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* 上传区 */
+.drop{
+  border:1.6px dashed rgba(139,147,171,.45);border-radius:14px;padding:30px 16px;text-align:center;
+  cursor:pointer;transition:.25s;position:relative;overflow:hidden;
+}
+.drop:hover,.drop.over{border-color:var(--c1);background:rgba(244,114,182,.06);box-shadow:0 0 0 4px rgba(244,114,182,.08)}
+.drop .ico{font-size:30px;margin-bottom:8px}
+.drop b{font-size:14px;font-weight:600}
+.drop p{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.7}
+.drop input{display:none}
+.vinfo{
+  display:none;gap:12px;align-items:center;background:var(--card2);border:1px solid var(--line);
+  border-radius:12px;padding:10px 12px;animation:fadeUp .35s ease;
+}
+.vinfo video{width:96px;height:54px;object-fit:cover;border-radius:8px;background:#000;flex:none}
+.vinfo .meta{font-size:12px;line-height:1.8;color:var(--sub);min-width:0}
+.vinfo .meta b{color:var(--txt);font-size:13px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* 分段选择器 */
+.seg{display:flex;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px}
+.seg button{
+  flex:1;border:0;background:transparent;color:var(--sub);font-size:12.5px;padding:8px 2px;border-radius:8px;
+  cursor:pointer;transition:.2s;font-family:inherit;white-space:nowrap;
+}
+.seg button.on{background:var(--grad);color:#081018;font-weight:700;box-shadow:0 4px 14px rgba(244,114,182,.3)}
+.seg button:not(.on):hover{color:var(--txt)}
+
+/* 滑块 */
+.sld-row{display:flex;align-items:center;gap:12px}
+input[type=range]{
+  flex:1;-webkit-appearance:none;appearance:none;height:5px;border-radius:99px;
+  background:linear-gradient(90deg,var(--c1) var(--p,30%),rgba(255,255,255,.12) var(--p,30%));outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;cursor:pointer;
+  box-shadow:0 2px 10px rgba(244,114,182,.6);border:3px solid var(--c1);
+}
+.sld-val{font-variant-numeric:tabular-nums;font-size:13px;color:var(--c1);min-width:38px;text-align:right;font-weight:600}
+
+/* 开关 */
+.sw-row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sw{position:relative;width:42px;height:24px;flex:none;cursor:pointer}
+.sw input{display:none}
+.sw i{
+  position:absolute;inset:0;border-radius:99px;background:rgba(255,255,255,.14);transition:.25s;
+}
+.sw i::after{
+  content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.25s;
+}
+.sw input:checked+i{background:var(--grad)}
+.sw input:checked+i::after{transform:translateX(18px)}
+
+.lbl{font-size:13.5px;display:flex;align-items:center;gap:6px}
+.hint{font-size:12px;color:var(--sub);line-height:1.7;margin-top:6px}
+
+/* 帮助图标 */
+.q{
+  display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;font-size:10.5px;
+  background:rgba(192,132,252,.18);color:#f9a8d4;cursor:help;border:1px solid rgba(192,132,252,.4);
+  transition:.2s;flex:none;font-style:normal;
+}
+.q:hover{background:rgba(192,132,252,.4);transform:scale(1.12)}
+
+/* 主按钮 */
+.go{
+  border:0;border-radius:13px;padding:14px;font-size:15px;font-weight:700;color:#081018;cursor:pointer;
+  background:var(--grad);box-shadow:0 8px 26px rgba(244,114,182,.35);transition:.25s;font-family:inherit;letter-spacing:1px;
+}
+.go:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 12px 32px rgba(244,114,182,.5)}
+.go:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* 进度 */
+.prog{height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
+.prog i{
+  display:block;height:100%;width:0;border-radius:99px;background:var(--grad);
+  box-shadow:0 0 12px rgba(244,114,182,.8);transition:width .25s;
+}
+.status{font-size:12.5px;color:var(--sub);min-height:18px;line-height:1.6}
+.status.warn{color:#fbbf24}
+
+/* 结果区 */
+.results{padding:22px;min-height:420px;display:flex;flex-direction:column}
+.rtop{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.rtop h2{font-size:16px;font-weight:700}
+.rtop h2 span{color:var(--c1)}
+.est{font-size:12px;color:var(--sub)}
+.exps{margin-left:auto;display:flex;gap:9px;flex-wrap:wrap}
+.btn{
+  border:1px solid var(--line);background:var(--card2);color:var(--txt);border-radius:10px;
+  padding:9px 15px;font-size:13px;cursor:pointer;transition:.22s;font-family:inherit;
+}
+.btn:hover:not(:disabled){border-color:var(--c1);color:var(--c1);transform:translateY(-1px)}
+.btn.pri{background:var(--grad);border:0;color:#081018;font-weight:700;box-shadow:0 6px 18px rgba(244,114,182,.3)}
+.btn.pri:hover:not(:disabled){color:#081018;box-shadow:0 9px 24px rgba(244,114,182,.5)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.empty{
+  flex:1;display:grid;place-items:center;color:var(--sub);font-size:13.5px;text-align:center;
+  border:1.6px dashed rgba(139,147,171,.3);border-radius:14px;min-height:280px;line-height:2;
+}
+.fcard{
+  background:var(--card2);border:1px solid var(--line);border-radius:13px;overflow:hidden;
+  transition:.25s;animation:fadeUp .4s ease backwards;
+}
+.fcard:hover{transform:translateY(-4px);border-color:rgba(244,114,182,.5);box-shadow:0 14px 30px rgba(0,0,0,.45)}
+.fcard img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;cursor:zoom-in;background:#000}
+.fbar{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.fbar .t{font-size:11.5px;color:var(--acc);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fbar .dl{
+  margin-left:auto;border:0;background:rgba(244,114,182,.12);color:var(--c1);width:26px;height:26px;flex:none;
+  border-radius:8px;cursor:pointer;transition:.2s;font-size:13px;
+}
+.fbar .dl:hover{background:rgba(244,114,182,.3)}
+
+/* 大图预览 */
+.modal{
+  position:fixed;inset:0;display:none;place-items:center;z-index:50;padding:30px;
+  background:rgba(5,8,16,.82);backdrop-filter:blur(10px);
+}
+.modal img{max-width:94vw;max-height:86vh;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,.7)}
+.mcap{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);font-size:13px;color:var(--sub);background:rgba(10,14,26,.85);padding:8px 18px;border-radius:99px;border:1px solid var(--line)}
+.mx{position:fixed;top:20px;right:26px;font-size:26px;color:var(--sub);cursor:pointer;background:none;border:0}
+.mx:hover{color:#fff}
+
+/* 帮助气泡 */
+.pop{
+  position:fixed;z-index:60;display:none;max-width:290px;background:#141a2e;border:1px solid rgba(192,132,252,.4);
+  border-radius:12px;padding:13px 15px;font-size:12.8px;line-height:1.9;color:var(--txt);
+  box-shadow:0 16px 44px rgba(0,0,0,.6);animation:fadeUp .2s ease;
+}
+.pop b{color:#f9a8d4}
+
+/* 历史 */
+.hist{display:flex;flex-direction:column;gap:8px}
+.hitem{
+  display:flex;align-items:center;gap:8px;font-size:12px;color:var(--sub);background:rgba(0,0,0,.22);
+  border:1px solid var(--line);border-radius:10px;padding:8px 11px;cursor:pointer;transition:.2s;
+}
+.hitem:hover{border-color:var(--c2);color:var(--txt)}
+.hitem .x{margin-left:auto;color:var(--sub);border:0;background:none;cursor:pointer;font-size:13px}
+.hitem .x:hover{color:#f87171}
+
+footer{position:relative;z-index:1;text-align:center;color:var(--sub);font-size:12px;padding:0 20px 26px;line-height:1.9}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="logo">🎬</span>
+  <div>
+    <h1>👑 <em>VIP 高清原图版</em> · 视频关键帧提取 → PPT</h1>
+    <div class="sub">T20 视频单帧提取工具 的迭代升级版 · 按视频原始分辨率无损导出 · 数字生态家园</div>
+  </div>
+  <span class="badge">✓ 原画质 · 本地处理 · 视频不上传</span>
+</header>
+
+<main>
+  <!-- ═══ 左侧控制面板 ═══ -->
+  <div class="panel">
+    <div class="ptitle">1 · 选择视频</div>
+    <label class="drop" id="drop">
+      <div class="ico">📂</div>
+      <b>点击选择 或 拖拽视频到这里</b>
+      <p>支持 MP4 / MOV / WEBM / MKV（浏览器能播放的格式）<br>全程本地处理，视频不会上传到任何服务器</p>
+      <input type="file" id="file" accept="video/*,.mkv,.mov">
+    </label>
+    <div class="vinfo" id="vinfo">
+      <video id="prev" muted playsinline></video>
+      <div class="meta"><b id="vname"></b><span id="vmeta"></span></div>
+    </div>
+
+    <div class="ptitle">2 · 参数设置</div>
+
+    <div>
+      <div class="lbl">分析精度 <i class="q" data-h="preset">?</i></div>
+      <div class="seg" id="preset" style="margin-top:8px">
+        <button data-v="p1">①极速</button><button data-v="p2">②快速</button>
+        <button data-v="p3" class="on">③均衡</button><button data-v="p4">④高清</button><button data-v="p5">⑤原画</button>
+      </div>
+      <div class="hint" id="presetHint">均衡档 ≈ 110 次采样，课程录屏推荐</div>
+    </div>
+
+    <div>
+      <div class="lbl">静止阈值 <i class="q" data-h="th">?</i></div>
+      <div class="sld-row" style="margin-top:10px">
+        <input type="range" id="th" min="1" max="30" value="6">
+        <span class="sld-val" id="thv">0.06</span>
+      </div>
+      <div class="hint">提取太多 → 调大（如 0.10）；漏页 → 调小（如 0.03）</div>
+    </div>
+
+    <div class="sw-row">
+      <div class="lbl">四角遮罩 <i class="q" data-h="mask">?</i></div>
+      <label class="sw"><input type="checkbox" id="mask"><i></i></label>
+    </div>
+
+    <div>
+      <div class="lbl">导出画质 <i class="q" data-h="fmt">?</i></div>
+      <div class="seg" id="fmt" style="margin-top:8px">
+        <button data-v="png" class="on">无损 PNG</button>
+        <button data-v="jpg95">高清 JPG</button>
+        <button data-v="jpg85">省空间 JPG</button>
+      </div>
+      <div class="hint" id="fmtHint">PNG 无损，文字最锐利，做 PPT 首选</div>
+    </div>
+
+    <button class="go" id="go">▶ 开始分析提取</button>
+    <div class="prog"><i id="bar"></i></div>
+    <div class="status" id="st">等待选择视频…</div>
+
+    <div class="ptitle">历史参数（点击复用）</div>
+    <div class="hist" id="hist"><div class="hint">暂无记录 —— 完成一次提取后自动保存参数</div></div>
+  </div>
+
+  <!-- ═══ 右侧结果区 ═══ -->
+  <div class="results">
+    <div class="rtop">
+      <h2>提取结果 <span id="cnt">0</span> 帧</h2>
+      <span class="est" id="est"></span>
+      <div class="exps">
+        <button class="btn" id="dlPng" disabled>⬇ 逐张下载原帧</button>
+        <button class="btn pri" id="mkPpt" disabled>📊 生成原画质 PPT</button>
+        <button class="btn" id="mkGif" disabled>🌀 生成预览 GIF <i class="q" data-h="gif" style="vertical-align:2px">?</i></button>
+      </div>
+    </div>
+    <div class="grid" id="frames">
+      <div class="empty">尚无结果<br>选好视频、调好参数，点「开始分析提取」</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  全部计算在您的浏览器本地完成 · 关闭页面不会留下任何视频数据<br>
+  视频单帧提取工具 · VIP 高清原图版（T21）｜ 程序大小 <span id="sz"></span> ｜ 最后保存 <span id="lm"></span><br>
+  作者：军哥懂保 ｜ 微信：xunijiayuan ｜ 数字生态家园 <a href="https://ecojia.cn" target="_blank" style="color:var(--sub);text-decoration:none">ecojia.cn</a>
+</footer>
+
+<!-- 大图预览 -->
+<div class="modal" id="modal"><button class="mx" onclick="$('modal').style.display='none'">✕</button><img id="mimg"><div class="mcap" id="mcap"></div></div>
+<!-- 帮助气泡 -->
+<div class="pop" id="pop"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const vid=document.createElement('video');vid.muted=true;vid.playsInline=true;vid.preload='auto';
+let dur=0,busy=false,results=[],pend=0,curName='';
+
+/* ═══ 帮助白话解释 ═══ */
+const HELP={
+preset:'<b>分析精度（大白话）</b><br>把整个视频均匀切成多少份来逐份检查画面变化。切得越细越不容易漏掉翻页，但分析速度越慢。<br><br>课程录屏选「③均衡」；视频很长先用「①极速」粗筛。',
+th:'<b>静止阈值（大白话）</b><br>判断「这页翻过去了没有」的严格程度：画面变化超过这个比例才算新一页。<br><br>数字小 = 敏感，连小动画都会抓；数字大 = 严格，只抓大变化。<br>抓多了就调大，漏页了就调小。',
+mask:'<b>四角遮罩（大白话）</b><br>比较画面时自动忽略四个角落。<br><br>录屏角落常有讲师摄像头小窗、平台水印在动，不遮住的话会被误判成「翻页了」，多抓一堆废帧。',
+fmt:'<b>导出画质（大白话）</b><br><b>无损 PNG</b>：原视频什么画质，导出来就是什么画质，一个像素都不丢，文字边缘最锐利。文件稍大，做 PPT 首选。<br><br><b>高清 JPG</b>：画质接近无损，文件小一半以上。<br><b>省空间 JPG</b>：文件最小，文字边缘可能有轻微毛边。',
+gif:'<b>关于 GIF（大白话）</b><br>GIF 是 1987 年的老格式，每张图最多 256 种颜色，清晰度天生有限，只适合做动态预览。<br><br>要高清成果请用「逐张下载原帧」或「生成 PPT」。'
+};
+document.addEventListener('click',e=>{
+  const q=e.target.closest('.q'),pop=$('pop');
+  if(q){
+    pop.innerHTML=HELP[q.dataset.h]||'';pop.style.display='block';
+    const r=q.getBoundingClientRect();
+    pop.style.left=Math.min(r.left,innerWidth-306)+'px';
+    pop.style.top=(r.bottom+8)+'px';
+    e.stopPropagation();return;
+  }
+  pop.style.display='none';
+});
+
+/* ═══ 分段选择器 ═══ */
+const SAMPLES={p1:40,p2:70,p3:110,p4:160,p5:220};
+const PRESET_HINT={p1:'极速档 ≈ 40 次采样，长视频快速粗筛',p2:'快速档 ≈ 70 次采样，日常录屏',p3:'均衡档 ≈ 110 次采样，课程录屏推荐',p4:'高清档 ≈ 160 次采样，细腻检测',p5:'原画档 ≈ 220 次采样，慢但最全'};
+let curPreset='p3',curFmt='png';
+$('preset').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  [...$('preset').children].forEach(x=>x.classList.toggle('on',x===b));
+  curPreset=b.dataset.v;$('presetHint').textContent=PRESET_HINT[curPreset];
+};
+const FMT_HINT={png:'PNG 无损，文字最锐利，做 PPT 首选',jpg95:'JPG 95% 质量，接近无损，文件更小',jpg85:'JPG 85% 质量，文件最小，适合帧数很多时'};
+$('fmt').onclick=e=>{
+  const b=e.target.closest('button');if(!b)return;
+  [...$('fmt').children].forEach(x=>x.classList.toggle('on',x===b));
+  curFmt=b.dataset.v;$('fmtHint').textContent=FMT_HINT[curFmt];
+};
+
+/* ═══ 视频加载 ═══ */
+$('drop').onclick=()=>$('file').click();
+$('file').onchange=e=>e.target.files[0]&&loadVid(e.target.files[0]);
+$('drop').ondragover=e=>{e.preventDefault();$('drop').classList.add('over')};
+$('drop').ondragleave=()=>$('drop').classList.remove('over');
+$('drop').ondrop=e=>{e.preventDefault();$('drop').classList.remove('over');const f=e.dataTransfer.files[0];if(f)loadVid(f)};
+function loadVid(f){
+  curName=f.name;
+  vid.src=URL.createObjectURL(f);
+  vid.onloadedmetadata=()=>{
+    dur=vid.duration;
+    $('prev').src=vid.src;
+    $('vinfo').style.display='flex';
+    $('vname').textContent=f.name;
+    $('vmeta').textContent=`${vid.videoWidth}×${vid.videoHeight} · ${fmtT(dur)} · ${(f.size/1048576).toFixed(1)} MB`;
+    if(vid.videoWidth>=3840)msg(`⚠ 检测到 4K 视频（${vid.videoWidth}×${vid.videoHeight}）：每帧约 3~8MB，若提取帧数很多建议选「省空间 JPG」`,1);
+    else msg('视频已就绪，点击「开始分析提取」');
+  };
+  vid.onerror=()=>msg('⚠ 此视频格式浏览器无法解码，请转码为 MP4 后再试',1);
+}
+
+/* ═══ 核心算法（沿用 ecojia T20：8×8块帧差 + 四角遮罩 + 拉普拉斯优选） ═══ */
+const GW=160,GH=90,BS=10,GX=GW/BS,GY=GH/BS;
+const samp=document.createElement('canvas');samp.width=GW;samp.height=GH;
+const sc=samp.getContext('2d',{willReadFrequently:true});
+const CORNER=2;
+function blockDiff(a,b){
+  let ch=0,tot=0;
+  for(let by=0;by<GY;by++)for(let bx=0;bx<GX;bx++){
+    if(by<CORNER||by>=GY-CORNER){if($('mask').checked&&(bx<CORNER||bx>=GX-CORNER))continue;}
+    let d=0;
+    for(let y=0;y<BS;y+=2)for(let x=0;x<BS;x+=2){
+      const i=((by*BS+y)*GW+bx*BS+x)*4;
+      d+=Math.abs(a[i]-b[i])+Math.abs(a[i+1]-b[i+1])+Math.abs(a[i+2]-b[i+2]);
+    }
+    if(d>90)ch++;tot++;
+  }
+  return ch/tot;
+}
+function sharpness(img){
+  let s=0,s2=0,n=0;
+  for(let y=1;y<GH-1;y+=2)for(let x=1;x<GW-1;x+=2){
+    const i=(y*GW+x)*4,c=img[i];
+    const lap=4*c-img[i-4]-img[i+4]-img[i-GW*4]-img[i+GW*4];
+    s+=lap;s2+=lap*lap;n++;
+  }
+  const m=s/n;return s2/n-m*m;
+}
+function grab(){sc.drawImage(vid,0,0,GW,GH);return sc.getImageData(0,0,GW,GH).data}
+
+/* ═══ 关键差异：按视频原始分辨率抓帧，无损导出 ═══ */
+function shotFull(){
+  const c=document.createElement('canvas');
+  c.width=vid.videoWidth;c.height=vid.videoHeight;   // ★ 原始分辨率，不压缩
+  c.getContext('2d').drawImage(vid,0,0);
+  if(curFmt==='png')return c.toDataURL('image/png');            // ★ 无损
+  if(curFmt==='jpg95')return c.toDataURL('image/jpeg',.95);
+  return c.toDataURL('image/jpeg',.85);
+}
+function shotSmall(){                                // 列表缩略图（不影响导出）
+  const c=document.createElement('canvas');
+  c.width=480;c.height=Math.round(480*vid.videoHeight/vid.videoWidth);
+  c.getContext('2d').drawImage(vid,0,0,c.width,c.height);
+  return c.toDataURL('image/jpeg',.85);
+}
+const EXT=()=>curFmt==='png'?'png':'jpg';
+function seek(t){return new Promise(r=>{const h=()=>{vid.removeEventListener('seeked',h);setTimeout(r,40)};vid.addEventListener('seeked',h);vid.currentTime=Math.min(t,dur-.05)})}
+const fmtT=t=>`${String(t/60|0).padStart(2,'0')}:${String(t%60|0).padStart(2,'0')}`;
+const msg=(s,w)=>{const st=$('st');st.textContent=s;st.className='status'+(w?' warn':'')};
+
+/* ═══ 分析流程 ═══ */
+$('go').onclick=async()=>{
+  if(busy)return;
+  if(!vid.src){msg('⚠ 请先选择视频文件',1);return}
+  busy=true;$('go').disabled=true;results=[];
+  $('frames').innerHTML='<div class="empty">正在分析，请稍候…<br>视频越长、精度越高，耗时越久</div>';
+  const th=$('th').value/100,n=SAMPLES[curPreset],step=dur/n;
+  try{
+    let prev=null,kept=null,keptScore=-1,keptT=0;
+    for(let i=0;i<n;i++){
+      const t=i*step;
+      await seek(t);
+      const g=grab();
+      let isNew;
+      if(kept===null)isNew=true;
+      else{isNew=blockDiff(g,kept)>th;}
+      if(prev&&kept!==null){if(blockDiff(g,prev)>th)isNew=true;}
+      prev=g;
+      if(isNew){
+        if(kept!==null)push(keptT,keptScore);
+        kept=g;keptScore=sharpness(g);keptT=t;
+      }else{
+        const s=sharpness(g);if(s>keptScore){kept=g;keptScore=s;keptT=t;}
+      }
+      $('bar').style.width=((i+1)/n*100)+'%';
+      if(i%5===0)msg(`采样 ${i+1}/${n} ｜ 已提取 ${results.length} 个变化画面`);
+    }
+    if(kept!==null)push(keptT,keptScore);
+  }catch(err){msg('⚠ 出错：'+err.message,1)}
+  render();saveHist();
+  busy=false;$('go').disabled=false;
+};
+function push(t,score){
+  results.push({t,score,full:shotFull(),small:shotSmall()});
+}
+function render(){
+  $('cnt').textContent=results.length;
+  $('bar').style.width='100%';
+  if(!results.length){
+    $('frames').innerHTML='<div class="empty">未检测到明显画面变化<br>试试把「静止阈值」调小一点</div>';
+    setExp(false);msg('分析完成：无有效变化帧');return;
+  }
+  $('frames').innerHTML='';
+  results.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='fcard';d.style.animationDelay=(i*0.03)+'s';
+    d.innerHTML=`<img src="${r.small}" onclick="view(${i})"><div class="fbar"><span class="t">#${i+1} · ${fmtT(r.t)}</span><button class="dl" onclick="dl1(${i})" title="下载此帧（原画质）">⬇</button></div>`;
+    $('frames').appendChild(d);
+  });
+  const mb=results.reduce((s,r)=>s+r.full.length*.75,0)/1048576;
+  $('est').textContent=`原帧合计约 ${mb.toFixed(1)} MB（${vid.videoWidth}×${vid.videoHeight} ${curFmt==='png'?'PNG 无损':'JPG'}）`;
+  setExp(true);
+  msg(`✔ 分析完成：${results.length} 个关键帧 · 原画质就绪，可导出 PPT / 逐张下载`);
+}
+function setExp(on){['dlPng','mkPpt','mkGif'].forEach(id=>$(id).disabled=!on)}
+function view(i){$('mimg').src=results[i].full;$('mcap').textContent=`第 ${i+1} 帧 · ${fmtT(results[i].t)} · ${vid.videoWidth}×${vid.videoHeight} 原画质`;$('modal').style.display='grid'}
+$('modal').onclick=e=>{if(e.target.id==='modal')$('modal').style.display='none'};
+function dl1(i){
+  const a=document.createElement('a');a.href=results[i].full;
+  a.download=`frame_${String(i+1).padStart(3,'0')}_t${results[i].t.toFixed(1)}s.${EXT()}`;a.click();
+}
+$('dlPng').onclick=()=>{msg('开始逐张下载（浏览器可能提示「允许下载多个文件」）…');results.forEach((r,i)=>setTimeout(()=>dl1(i),i*400))};
+
+/* ═══ 第三方库懒加载 + 多 CDN 兜底 ═══ */
+const CDN_PPT=['https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js','https://unpkg.com/pptxgenjs@3.12.0/dist/pptxgen.bundle.js','https://cdnjs.cloudflare.com/ajax/libs/PptxGenJS/3.12.0/pptxgen.bundle.min.js'];
+const CDN_GIF=['https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js','https://unpkg.com/gif.js@0.2.0/dist/gif.js','https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js'];
+function loadLib(urls,test){
+  if(test())return Promise.resolve();
+  return new Promise((ok,no)=>{
+    const tryNext=i=>{
+      if(i>=urls.length)return no(new Error('组件加载失败（网络原因）'));
+      const s=document.createElement('script');s.src=urls[i];
+      s.onload=()=>test()?ok():tryNext(i+1);
+      s.onerror=()=>tryNext(i+1);
+      document.head.appendChild(s);
+    };tryNext(0);
+  });
+}
+
+/* ═══ 导出 PPT：16:9 页面 + 等比铺满不变形 ═══ */
+$('mkPpt').onclick=async()=>{
+  msg('正在加载 PPT 组件…');
+  try{
+    await loadLib(CDN_PPT,()=>typeof PptxGenJS!=='undefined');
+    msg('正在生成原画质 PPT…');
+    const p=new PptxGenJS();
+    p.defineLayout({name:'W',width:13.333,height:7.5});p.layout='W';
+    const PW=13.333,PH=7.5,vr=vid.videoWidth/vid.videoHeight,pr=PW/PH;
+    let w,h,x,y;
+    if(vr>pr){w=PW;h=PW/vr;x=0;y=(PH-h)/2}else{h=PH;w=PH*vr;y=0;x=(PW-w)/2}  // 等比适配，不拉伸
+    results.forEach((r,i)=>{
+      const s=p.addSlide();
+      s.background={color:'000000'};
+      s.addImage({data:r.full,x,y,w,h});                                     // ★ 原画质整图
+      s.addText(`${fmtT(r.t)}`,{x:PW-1.25,y:PH-.45,w:1.1,h:.38,fontSize:11,color:'F0B35C',fill:{color:'000000',transparency:35},align:'center'});
+    });
+    await p.writeFile({fileName:`原画质单帧提取_${curName.replace(/\.[^.]+$/,'')||'视频'}_${new Date().toISOString().slice(0,10)}.pptx`});
+    msg(`✔ PPT 已生成下载：${results.length} 页 · ${vid.videoWidth}×${vid.videoHeight} 原画质`);
+  }catch(e){
+    // 兜底：自包含 HTML 幻灯片（原画质）
+    let h='<!DOCTYPE html><meta charset="utf-8"><title>原画质单帧幻灯片</title><style>body{margin:0;background:#000;font-family:sans-serif}div{display:flex;align-items:center;justify-content:center;height:100vh}img{max-width:100vw;max-height:100vh}span{position:fixed;right:12px;bottom:10px;color:#f0b35c;font-size:13px}</style>';
+    results.forEach((r,i)=>h+=`<div><img src="${r.full}"><span>${i+1}/${results.length} · ${fmtT(r.t)}</span></div>`);
+    dl('原画质单帧幻灯片.html',h);
+    msg('⚠ PPT 组件加载失败，已改为下载 HTML 幻灯片（画质同为原图）',1);
+  }
+};
+
+/* ═══ 导出 GIF（预览用，格式天生限 256 色） ═══ */
+$('mkGif').onclick=async()=>{
+  msg('正在加载 GIF 组件…');
+  try{
+    await loadLib(CDN_GIF,()=>typeof GIF!=='undefined');
+    const gw=800,gh=Math.round(gw*vid.videoHeight/vid.videoWidth);
+    const workerURL=await fetch('https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js').then(r=>r.text())
+      .catch(()=>null)||await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js').then(r=>r.text());
+    const g=new GIF({workers:2,quality:8,width:gw,height:gh,workerScript:URL.createObjectURL(new Blob([workerURL],{type:'application/javascript'}))});
+    pend=results.length;
+    msg('正在合成 GIF…');
+    results.forEach((r,i)=>{
+      const im=new Image();
+      im.onload=()=>{
+        const c=document.createElement('canvas');c.width=gw;c.height=gh;
+        c.getContext('2d').drawImage(im,0,0,gw,gh);
+        const next=results[i+1];
+        const delay=next?Math.max(500,Math.min(4000,(next.t-r.t)*1000)):2000;  // 按停留时长
+        g.addFrame(c,{delay,copy:true});
+        if(--pend===0){
+          g.on('finished',b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='关键帧预览.gif';a.click();msg('✔ GIF 已生成（256 色预览版，高清成果请用 PPT / 原帧）')});
+          g.render();
+        }
+      };
+      im.src=r.full;
+    });
+  }catch(e){msg('⚠ GIF 组件加载失败（网络原因），可改用逐张下载 / PPT',1)}
+};
+
+function dl(name,data){
+  const a=document.createElement('a');
+  a.href=typeof data==='string'&&data.startsWith('data:')?data:URL.createObjectURL(new Blob([data]));
+  a.download=name;a.click();
+}
+
+/* ═══ 阈值滑块 ═══ */
+const thEl=$('th');
+function paintSld(){thEl.style.setProperty('--p',(thEl.value-1)/29*100+'%')}
+thEl.oninput=()=>{$('thv').textContent=(thEl.value/100).toFixed(2);paintSld()};
+paintSld();
+
+/* ═══ 历史记忆 ═══ */
+const HK='vfe_hd_hist';
+function saveHist(){
+  let h=[];try{h=JSON.parse(localStorage.getItem(HK)||'[]')}catch(e){}
+  h.unshift({preset:curPreset,th:thEl.value,mask:$('mask').checked,fmt:curFmt,n:results.length,time:Date.now()});
+  h=h.slice(0,8);localStorage.setItem(HK,JSON.stringify(h));renderHist();
+}
+function renderHist(){
+  let h=[];try{h=JSON.parse(localStorage.getItem(HK)||'[]')}catch(e){}
+  if(!h.length){$('hist').innerHTML='<div class="hint">暂无记录 —— 完成一次提取后自动保存参数</div>';return}
+  const PN={p1:'①极速',p2:'②快速',p3:'③均衡',p4:'④高清',p5:'⑤原画'},FN={png:'PNG',jpg95:'JPG95',jpg85:'JPG85'};
+  $('hist').innerHTML='';
+  h.forEach((r,i)=>{
+    const d=document.createElement('div');d.className='hitem';
+    d.innerHTML=`<span>${PN[r.preset]} · 阈值${(r.th/100).toFixed(2)} · ${FN[r.fmt]}${r.mask?' · 遮罩':''} → ${r.n}帧</span><button class="x">✕</button>`;
+    d.onclick=e=>{
+      if(e.target.className==='x'){h.splice(i,1);localStorage.setItem(HK,JSON.stringify(h));renderHist();return}
+      curPreset=r.preset;curFmt=r.fmt;
+      [...$('preset').children].forEach(x=>x.classList.toggle('on',x.dataset.v===r.preset));
+      [...$('fmt').children].forEach(x=>x.classList.toggle('on',x.dataset.v===r.fmt));
+      $('presetHint').textContent=PRESET_HINT[r.preset];$('fmtHint').textContent=FMT_HINT[r.fmt];
+      thEl.value=r.th;$('thv').textContent=(r.th/100).toFixed(2);paintSld();
+      $('mask').checked=r.mask;msg('已复用历史参数');
+    };
+    $('hist').appendChild(d);
+  });
+}
+renderHist();
+
+/* ═══ 页脚信息（程序大小/最后保存时间） ═══ */
+(function(){
+  const nav=performance.getEntriesByType('navigation')[0];
+  const bytes=nav&&(nav.encodedBodySize||nav.transferSize);
+  $('sz').textContent=bytes?(bytes/1024).toFixed(1)+' KB':'—';
+  const d=new Date(document.lastModified);
+  $('lm').textContent=d.getFullYear()+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+':'+String(d.getSeconds()).padStart(2,'0');
+})();
+</script>
+</body>
+</html>
